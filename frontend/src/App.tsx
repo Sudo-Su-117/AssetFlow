@@ -18,6 +18,12 @@ import {
 import { Dashboard } from './pages/Dashboard/Dashboard';
 import { Organization } from './pages/Organization/Organization';
 import { Assets } from './pages/Assets/Assets';
+import { Allocation } from './pages/Allocation/Allocation';
+import { Booking } from './pages/Booking/Booking';
+import { Maintenance } from './pages/Maintenance/Maintenance';
+import { Audit } from './pages/Audit/Audit';
+import { Reports } from './pages/Reports/Reports';
+import { Notifications } from './pages/Notifications/Notifications';
 
 const queryClient = new QueryClient();
 
@@ -119,15 +125,15 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <Package size={18} />
             Assets
           </Link>
-          <Link to="/transfers/request" className={`sidebar-item ${location.pathname.startsWith('/transfers') ? 'active' : ''}`}>
+          <Link to="/transfers" className={`sidebar-item ${location.pathname.startsWith('/transfers') ? 'active' : ''}`}>
             <ArrowLeftRight size={18} />
             Allocation & Transfer
           </Link>
-          <Link to="/bookings/new" className={`sidebar-item ${location.pathname.startsWith('/bookings') ? 'active' : ''}`}>
+          <Link to="/bookings" className={`sidebar-item ${location.pathname.startsWith('/bookings') ? 'active' : ''}`}>
             <Calendar size={18} />
             Resource Booking
           </Link>
-          <Link to="/maintenance/request" className={`sidebar-item ${location.pathname.startsWith('/maintenance') ? 'active' : ''}`}>
+          <Link to="/maintenance" className={`sidebar-item ${location.pathname.startsWith('/maintenance') ? 'active' : ''}`}>
             <Wrench size={18} />
             Maintenance
           </Link>
@@ -190,30 +196,12 @@ function App() {
               <Route path="/assets" element={<Assets />} />
 
               {/* Navigation Placeholders */}
-              <Route 
-                path="/bookings/new" 
-                element={<ModulePlaceholder title="Resource Booking" icon={<Calendar size={32} />} />} 
-              />
-              <Route 
-                path="/maintenance/request" 
-                element={<ModulePlaceholder title="Raise Maintenance Request" icon={<Wrench size={32} />} />} 
-              />
-              <Route 
-                path="/transfers/request" 
-                element={<ModulePlaceholder title="Request Transfer" icon={<ArrowLeftRight size={32} />} />} 
-              />
-              <Route 
-                path="/audit" 
-                element={<ModulePlaceholder title="System Audit Logs" icon={<ShieldCheck size={32} />} />} 
-              />
-              <Route 
-                path="/reports" 
-                element={<ModulePlaceholder title="Analytics & Reports" icon={<BarChart3 size={32} />} />} 
-              />
-              <Route 
-                path="/notifications" 
-                element={<ModulePlaceholder title="System Notifications" icon={<Bell size={32} />} />} 
-              />
+              <Route path="/bookings" element={<Booking />} />
+              <Route path="/maintenance" element={<Maintenance />} />
+              <Route path="/transfers" element={<Allocation />} />
+              <Route path="/audit" element={<Audit />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/notifications" element={<Notifications />} />
 
               {/* Catch-all redirect */}
               <Route path="*" element={<Dashboard />} />

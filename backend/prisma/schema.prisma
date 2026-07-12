@@ -15,13 +15,17 @@ model User {
   status       String        @default("ACTIVE") // "ACTIVE", "INACTIVE"
   departmentId String?
   department   Department?   @relation("DeptUsers", fields: [departmentId], references: [id])
-  allocations  Allocation[]
-  transfersReq Transfer[]    @relation("RequestedBy")
-  transfersApp Transfer[]    @relation("ApprovedBy")
+  allocations     Allocation[]
+  allocatedBy     Allocation[]  @relation("AllocatedByUser")
+  transfersReq    Transfer[]    @relation("RequestedBy")
+  transfersApp    Transfer[]    @relation("ApprovedBy")
+  transfersFrom   Transfer[]    @relation("TransferFromUser")
+  transfersTo     Transfer[]    @relation("TransferToUser")
   bookings     Booking[]
   activities   ActivityLog[]
   notifications Notification[]
   deptHeadOf   Department[]  @relation("DeptHead")
+  requestedMaintenance Maintenance[] @relation("RequestedMaintenance")
   createdAt    DateTime      @default(now())
 }
 
@@ -39,6 +43,7 @@ model Department {
   assets             Asset[]
   transfersFrom      Transfer[]    @relation("FromDept")
   transfersTo        Transfer[]    @relation("ToDept")
+  auditCycles        AuditCycle[]
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 }
@@ -79,6 +84,8 @@ model Asset {
   bookable           Boolean       @default(false)
   imageUrl           String?
   qrCode             String?
+  auditRecords       AuditRecord[]
+  discrepancyReports DiscrepancyReport[]
   createdAt          DateTime      @default(now())
 }
 
@@ -92,14 +99,20 @@ model AssetDocument {
 }
 
 model Allocation {
-  id          String    @id @default(uuid())
-  assetId     String
-  asset       Asset     @relation(fields: [assetId], references: [id])
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  allocatedAt DateTime  @default(now())
-  returnedAt  DateTime?
-  notes       String?
+  id                    String    @id @default(uuid())
+  assetId               String
+  asset                 Asset     @relation(fields: [assetId], references: [id])
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id])
+  allocatedAt           DateTime  @default(now())
+  returnedAt            DateTime?
+  expectedReturnDate    DateTime?
+  conditionAtAllocation String?   // "NEW", "GOOD", "FAIR", "POOR"
+  conditionAtReturn     String?   // "NEW", "GOOD", "FAIR", "POOR"
+  status                String    @default("ACTIVE") // "ACTIVE", "CLOSED"
+  notes                 String?
+  allocatedById         String?
+  allocatedBy           User?     @relation("AllocatedByUser", fields: [allocatedById], references: [id])
 }
 
 model Transfer {
@@ -115,6 +128,11 @@ model Transfer {
   requestedBy      User        @relation("RequestedBy", fields: [requestedById], references: [id])
   approvedById     String?
   approvedBy       User?       @relation("ApprovedBy", fields: [approvedById], references: [id])
+  fromUserId       String?
+  fromUser         User?       @relation("TransferFromUser", fields: [fromUserId], references: [id])
+  toUserId         String?
+  toUser           User?       @relation("TransferToUser", fields: [toUserId], references: [id])
+  reason           String?
   requestedAt      DateTime    @default(now())
   approvedAt       DateTime?
 }
@@ -133,16 +151,22 @@ model Booking {
 }
 
 model Maintenance {
-  id           String    @id @default(uuid())
-  assetId      String
-  asset        Asset     @relation(fields: [assetId], references: [id])
-  status       String    // "PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"
-  description  String
-  cost         Float     @default(0.0)
-  scheduledFor DateTime
-  startedAt    DateTime?
-  completedAt  DateTime?
-  createdAt    DateTime  @default(now())
+  id                 String    @id @default(uuid())
+  assetId            String
+  asset              Asset     @relation(fields: [assetId], references: [id])
+  description        String    // Issue description
+  priority           String    @default("MEDIUM") // "LOW", "MEDIUM", "HIGH"
+  status             String    @default("PENDING") // "PENDING", "APPROVED", "TECHNICIAN_ASSIGNED", "IN_PROGRESS", "RESOLVED"
+  assignedTechnician String?   // Technician name or ID
+  requestedById      String?
+  requestedBy        User?     @relation("RequestedMaintenance", fields: [requestedById], references: [id])
+  cost               Float     @default(0.0)
+  scheduledFor       DateTime  @default(now())
+  approvedAt         DateTime?
+  startedAt          DateTime?
+  resolvedAt         DateTime?
+  resolutionNotes    String?
+  createdAt          DateTime  @default(now())
 }
 
 model Notification {
@@ -162,4 +186,46 @@ model ActivityLog {
   userId    String?
   user      User?    @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
+}
+
+model AuditCycle {
+  id                String              @id @default(uuid())
+  title             String
+  departmentId      String
+  department        Department          @relation(fields: [departmentId], references: [id])
+  location          String?
+  startDate         DateTime
+  endDate           DateTime
+  assignedAuditors  String              // Comma-separated auditor emails
+  status            String              @default("ACTIVE") // "ACTIVE", "CLOSED"
+  createdAt         DateTime            @default(now())
+  closedAt          DateTime?
+  records           AuditRecord[]
+  discrepancies     DiscrepancyReport[]
+}
+
+model AuditRecord {
+  id                 String     @id @default(uuid())
+  auditCycleId       String
+  auditCycle         AuditCycle @relation(fields: [auditCycleId], references: [id])
+  assetId            String
+  asset              Asset      @relation(fields: [assetId], references: [id])
+  expectedLocation   String
+  actualLocation     String?
+  verificationStatus String     @default("PENDING") // "PENDING", "VERIFIED", "MISSING", "DAMAGED"
+  remarks            String?
+  verifiedBy         String?
+  verifiedAt         DateTime?
+}
+
+model DiscrepancyReport {
+  id               String     @id @default(uuid())
+  auditCycleId     String
+  auditCycle       AuditCycle @relation(fields: [auditCycleId], references: [id])
+  assetId          String
+  asset              Asset      @relation(fields: [assetId], references: [id])
+  issueType        String     // "MISSING", "DAMAGED"
+  severity         String     // "HIGH", "MEDIUM"
+  resolutionStatus String     @default("PENDING") // "PENDING", "RESOLVED"
+  generatedAt      DateTime   @default(now())
 }

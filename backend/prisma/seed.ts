@@ -282,12 +282,38 @@ async function main() {
   });
 
   console.log('Seeding allocations...');
-  await prisma.allocation.createMany({
-    data: [
-      { assetId: mbp.id, userId: employeeIt.id, allocatedAt: threeDaysAgo },
-      { assetId: ipad.id, userId: employeeIt.id, allocatedAt: threeDaysAgo },
-      { assetId: hrLaptop.id, userId: employeeHr.id, allocatedAt: now },
-    ],
+  await prisma.allocation.create({
+    data: {
+      assetId: mbp.id,
+      userId: employeeIt.id,
+      allocatedAt: threeDaysAgo,
+      conditionAtAllocation: 'NEW',
+      status: 'ACTIVE',
+      allocatedById: admin.id
+    }
+  });
+
+  await prisma.allocation.create({
+    data: {
+      assetId: ipad.id,
+      userId: employeeIt.id,
+      allocatedAt: threeDaysAgo,
+      expectedReturnDate: threeDaysAgo,
+      conditionAtAllocation: 'GOOD',
+      status: 'ACTIVE',
+      allocatedById: admin.id
+    }
+  });
+
+  await prisma.allocation.create({
+    data: {
+      assetId: hrLaptop.id,
+      userId: employeeHr.id,
+      allocatedAt: now,
+      conditionAtAllocation: 'NEW',
+      status: 'ACTIVE',
+      allocatedById: admin.id
+    }
   });
 
   console.log('Seeding transfers...');
@@ -299,6 +325,9 @@ async function main() {
       status: 'PENDING',
       requestedById: employeeIt.id,
       requestedAt: now,
+      fromUserId: employeeHr.id, // Transfer from Priya Sharma (HR)
+      toUserId: employeeIt.id,   // To Alex Johnson (IT)
+      reason: 'Workstation reorganization requirement'
     },
   });
 
@@ -321,11 +350,42 @@ async function main() {
     data: {
       assetId: monitor.id,
       status: 'IN_PROGRESS',
+      priority: 'HIGH',
       description: 'Screen flickering issue - replacing display panel',
       cost: 150.0,
       scheduledFor: now,
       startedAt: now,
+      assignedTechnician: 'R. Varma',
+      requestedById: employeeIt.id
     },
+  });
+
+  await prisma.maintenance.create({
+    data: {
+      assetId: projector.id,
+      status: 'PENDING',
+      priority: 'MEDIUM',
+      description: 'Projector bulb dimmed, needs replacement',
+      cost: 80.0,
+      scheduledFor: now,
+      requestedById: employeeIt.id
+    }
+  });
+
+  await prisma.maintenance.create({
+    data: {
+      assetId: chair.id,
+      status: 'RESOLVED',
+      priority: 'LOW',
+      description: 'Chair wheel loose',
+      cost: 25.0,
+      scheduledFor: now,
+      startedAt: now,
+      resolvedAt: now,
+      resolutionNotes: 'Replaced caster wheel with new spare unit.',
+      assignedTechnician: 'S. Patel',
+      requestedById: employeeHr.id
+    }
   });
 
   console.log('Seeding notifications...');
@@ -383,6 +443,37 @@ async function main() {
         createdAt: threeDaysAgo,
       },
     ],
+  });
+
+  console.log('Seeding audit cycles...');
+  const auditCycle = await prisma.auditCycle.create({
+    data: {
+      title: 'Q3 IT Hardware Compliance Audit',
+      departmentId: itDept.id,
+      location: 'HQ Floor 2',
+      startDate: new Date(now.getTime() - 2*24*60*60*1000),
+      endDate: new Date(now.getTime() + 10*24*60*60*1000),
+      assignedAuditors: 'admin@assetflow.com,manager@assetflow.com',
+      status: 'ACTIVE'
+    }
+  });
+
+  await prisma.auditRecord.create({
+    data: {
+      auditCycleId: auditCycle.id,
+      assetId: mbp.id,
+      expectedLocation: 'Desk IT-04',
+      verificationStatus: 'PENDING'
+    }
+  });
+
+  await prisma.auditRecord.create({
+    data: {
+      auditCycleId: auditCycle.id,
+      assetId: ipad.id,
+      expectedLocation: 'IT Storage Lab',
+      verificationStatus: 'PENDING'
+    }
   });
 
   console.log('Database seeded successfully!');

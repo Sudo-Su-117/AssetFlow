@@ -6,6 +6,12 @@ import departmentRouter from './modules/organization/department/department.route
 import categoryRouter from './modules/organization/category/category.routes';
 import employeeRouter from './modules/organization/employee/employee.routes';
 import assetRouter from './modules/assets/asset.routes';
+import allocationRouter from './modules/allocation/allocation.routes';
+import bookingRouter from './modules/booking/booking.routes';
+import maintenanceRouter from './modules/maintenance/maintenance.routes';
+import auditRouter from './modules/audit/audit.routes';
+import reportsRouter from './modules/reports/reports.routes';
+import notificationRouter from './modules/notifications/notifications.routes';
 
 dotenv.config();
 
@@ -27,6 +33,12 @@ app.use('/api/departments', departmentRouter);
 app.use('/api/categories', categoryRouter);
 app.use('/api/employees', employeeRouter);
 app.use('/api/assets', assetRouter);
+app.use('/api', allocationRouter);
+app.use('/api', bookingRouter);
+app.use('/api', maintenanceRouter);
+app.use('/api', auditRouter);
+app.use('/api', reportsRouter);
+app.use('/api', notificationRouter);
 
 // Fallback for unmatched routes
 app.use((req, res) => {
