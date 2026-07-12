@@ -1,0 +1,126 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  name         String
+  role         String        // "ADMIN", "ASSET_MANAGER", "DEPARTMENT_HEAD", "EMPLOYEE"
+  departmentId String?
+  department   Department?   @relation(fields: [departmentId], references: [id])
+  allocations  Allocation[]
+  transfersReq Transfer[]    @relation("RequestedBy")
+  transfersApp Transfer[]    @relation("ApprovedBy")
+  bookings     Booking[]
+  activities   ActivityLog[]
+  notifications Notification[]
+  createdAt    DateTime      @default(now())
+}
+
+model Department {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  users     User[]
+  assets    Asset[]
+  transfersFrom Transfer[] @relation("FromDept")
+  transfersTo   Transfer[] @relation("ToDept")
+}
+
+model Asset {
+  id                 String        @id @default(uuid())
+  assetTag           String        @unique // e.g., AF-0001
+  name               String
+  category           String        // e.g., "LAPTOP", "FURNITURE", "VEHICLE"
+  status             String        // "AVAILABLE", "ALLOCATED", "UNDER_MAINTENANCE", "TRANSFERRED"
+  serialNumber       String?
+  model              String?
+  location           String?
+  value              Float         @default(0.0)
+  expectedReturnDate DateTime?     // Used for tracking upcoming/overdue returns
+  departmentId       String?
+  department         Department?   @relation(fields: [departmentId], references: [id])
+  allocations        Allocation[]
+  transfers          Transfer[]
+  bookings           Booking[]
+  maintenanceRecords Maintenance[]
+  createdAt          DateTime      @default(now())
+}
+
+model Allocation {
+  id          String    @id @default(uuid())
+  assetId     String
+  asset       Asset     @relation(fields: [assetId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  allocatedAt DateTime  @default(now())
+  returnedAt  DateTime?
+  notes       String?
+}
+
+model Transfer {
+  id               String      @id @default(uuid())
+  assetId          String
+  asset            Asset       @relation(fields: [assetId], references: [id])
+  fromDepartmentId String
+  fromDepartment   Department  @relation("FromDept", fields: [fromDepartmentId], references: [id])
+  toDepartmentId   String
+  toDepartment     Department  @relation("ToDept", fields: [toDepartmentId], references: [id])
+  status           String      // "PENDING", "APPROVED", "REJECTED"
+  requestedById    String
+  requestedBy      User        @relation("RequestedBy", fields: [requestedById], references: [id])
+  approvedById     String?
+  approvedBy       User?       @relation("ApprovedBy", fields: [approvedById], references: [id])
+  requestedAt      DateTime    @default(now())
+  approvedAt       DateTime?
+}
+
+model Booking {
+  id        String   @id @default(uuid())
+  assetId   String
+  asset     Asset    @relation(fields: [assetId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  startTime DateTime
+  endTime   DateTime
+  status    String   // "ACTIVE", "COMPLETED", "CANCELLED"
+  purpose   String?
+  createdAt DateTime @default(now())
+}
+
+model Maintenance {
+  id           String    @id @default(uuid())
+  assetId      String
+  asset        Asset     @relation(fields: [assetId], references: [id])
+  status       String    // "PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"
+  description  String
+  cost         Float     @default(0.0)
+  scheduledFor DateTime
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  message   String
+  type      String   // "OVERDUE_RETURN", "MAINTENANCE_DUE", "TRANSFER_REQUEST", "GENERAL"
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  type      String   // "ASSET_CREATED", "ASSET_ALLOCATED", "MAINTENANCE_CREATED", "TRANSFER_REQUESTED", etc.
+  message   String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
