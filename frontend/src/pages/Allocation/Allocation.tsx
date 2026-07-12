@@ -50,6 +50,7 @@ export const Allocation: React.FC = () => {
   const [transferTargetId, setTransferTargetId] = useState('');
   const [transferReason, setTransferReason] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'ALLOCATE' | 'TRANSFER'>('ALLOCATE');
 
   // 1. Fetch Assets list
   const { data: assets = [] } = useQuery({
@@ -240,63 +241,45 @@ export const Allocation: React.FC = () => {
           {/* If asset is selected */}
           {selectedAssetId && !isLoadingDetails && selectedAsset && (
             <>
-              {/* Warnings & Allocation Banners (Matches Wireframe design) */}
-              {activeAllocation ? (
-                // 1. ALLOCATED Warning banner
-                <div style={{ 
-                  background: 'rgba(239, 68, 68, 0.1)', 
-                  border: '1px solid rgba(239, 68, 68, 0.25)', 
-                  borderRadius: '12px', 
-                  padding: '1.25rem', 
-                  marginBottom: '1.5rem', 
-                  color: '#fca5a5' 
-                }}>
-                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-                    <AlertTriangle size={20} style={{ marginTop: '0.15rem' }} />
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
-                        Already Allocated to {activeAllocation.user?.name} ({activeAllocation.user?.department?.name || 'No Dept'})
-                      </div>
-                      <div style={{ fontSize: '0.8rem', opacity: 0.9, marginTop: '0.25rem' }}>
-                        Direct re-allocation is blocked. Submit a transfer request below or check back in the asset.
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Return Asset check-in action (Managers Only) */}
-                  {canWrite && (
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
-                      <button 
-                        className="btn btn-secondary" 
-                        onClick={() => setReturnDialogOpen(true)}
-                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: 'rgba(239, 68, 68, 0.2)', color: '#f87171' }}
-                      >
-                        <Undo2 size={12} style={{ marginRight: '0.35rem' }} /> Return check-in
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                // 2. AVAILABLE Info banner
-                <div style={{ 
-                  background: 'rgba(16, 185, 129, 0.1)', 
-                  border: '1px solid rgba(16, 185, 129, 0.25)', 
-                  borderRadius: '12px', 
-                  padding: '1.25rem', 
-                  marginBottom: '1.5rem', 
-                  color: '#a7f3d0' 
-                }}>
-                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                    <Info size={20} />
-                    <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
-                      Asset is Available in Float Pool
-                    </div>
-                  </div>
-                  <p style={{ fontSize: '0.8rem', opacity: 0.9, marginTop: '0.25rem', marginLeft: '2.1rem' }}>
-                    You can directly allocate this asset to any active employee.
-                  </p>
-                </div>
-              )}
+              {/* Tab Selector */}
+              <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.25rem', marginBottom: '1.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('ALLOCATE'); setSubmitError(null); }}
+                  style={{
+                    flex: 1,
+                    background: activeTab === 'ALLOCATE' ? 'rgba(59, 130, 246, 0.15)' : 'none',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '0.5rem',
+                    color: activeTab === 'ALLOCATE' ? 'var(--color-primary)' : 'var(--text-secondary)',
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  Direct Allocation & Return
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('TRANSFER'); setSubmitError(null); }}
+                  style={{
+                    flex: 1,
+                    background: activeTab === 'TRANSFER' ? 'rgba(59, 130, 246, 0.15)' : 'none',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '0.5rem',
+                    color: activeTab === 'TRANSFER' ? 'var(--color-primary)' : 'var(--text-secondary)',
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  Initiate Asset Transfer
+                </button>
+              </div>
 
               {/* Workflow Error messages */}
               {submitError && (
@@ -305,147 +288,233 @@ export const Allocation: React.FC = () => {
                 </div>
               )}
 
-              {/* WORKFLOW 1: TRANSFER REQUEST FORM (Shown only if allocated) */}
-              {activeAllocation && (
-                <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '1.25rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
-                    Initiate Ownership Transfer
-                  </h3>
-                  <form onSubmit={handleTransferRequest}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                      {/* From current owner */}
-                      <div className="form-group">
-                        <label className="form-label">From Holder (Current)</label>
-                        <input 
-                          type="text" 
-                          className="form-input" 
-                          value={activeAllocation.user?.name || ''} 
-                          disabled 
-                        />
+              {/* TAB 1: ALLOCATION & RETURN */}
+              {activeTab === 'ALLOCATE' && (
+                <>
+                  {activeAllocation ? (
+                    // 1. ALLOCATED Warning banner
+                    <div style={{ 
+                      background: 'rgba(239, 68, 68, 0.1)', 
+                      border: '1px solid rgba(239, 68, 68, 0.25)', 
+                      borderRadius: '12px', 
+                      padding: '1.25rem', 
+                      marginBottom: '1.5rem', 
+                      color: '#fca5a5' 
+                    }}>
+                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                        <AlertTriangle size={20} style={{ marginTop: '0.15rem' }} />
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
+                            Already Allocated to {activeAllocation.user?.name} ({activeAllocation.user?.department?.name || 'No Dept'})
+                          </div>
+                          <div style={{ fontSize: '0.8rem', opacity: 0.9, marginTop: '0.25rem' }}>
+                            Direct re-allocation is blocked. Submit a transfer request under the <strong>Initiate Asset Transfer</strong> tab or return the asset below.
+                          </div>
+                        </div>
                       </div>
-                      
-                      {/* To new recipient */}
-                      <div className="form-group">
-                        <label className="form-label">To Employee (Recipient)</label>
-                        <select 
-                          className="form-select"
-                          value={transferTargetId}
-                          onChange={(e) => setTransferTargetId(e.target.value)}
-                        >
-                          <option value="">Select Employee...</option>
-                          {employees.filter(emp => emp.id !== activeAllocation.userId && emp.status === 'ACTIVE').map(emp => (
-                            <option key={emp.id} value={emp.id}>
-                              {emp.name} ({emp.email})
-                            </option>
-                          ))}
-                        </select>
+
+                      {/* Return Asset check-in action (Managers Only) */}
+                      {canWrite && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                          <button 
+                            className="btn btn-secondary" 
+                            onClick={() => setReturnDialogOpen(true)}
+                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: 'rgba(239, 68, 68, 0.2)', color: '#f87171' }}
+                          >
+                            <Undo2 size={12} style={{ marginRight: '0.35rem' }} /> Return check-in
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    // 2. AVAILABLE Info banner
+                    <div style={{ 
+                      background: 'rgba(16, 185, 129, 0.1)', 
+                      border: '1px solid rgba(16, 185, 129, 0.25)', 
+                      borderRadius: '12px', 
+                      padding: '1.25rem', 
+                      marginBottom: '1.5rem', 
+                      color: '#a7f3d0' 
+                    }}>
+                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                        <Info size={20} />
+                        <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
+                          Asset is Available in Float Pool
+                        </div>
                       </div>
+                      <p style={{ fontSize: '0.8rem', opacity: 0.9, marginTop: '0.25rem', marginLeft: '2.1rem' }}>
+                        You can directly allocate this asset to any active employee.
+                      </p>
                     </div>
+                  )}
 
-                    {/* Reason */}
-                    <div className="form-group">
-                      <label className="form-label">Reason for Transfer</label>
-                      <textarea 
-                        className="form-textarea" 
-                        placeholder="State reason for ownership change..." 
-                        rows={3}
-                        value={transferReason}
-                        onChange={(e) => setTransferReason(e.target.value)}
-                      />
+                  {/* DIRECT ALLOCATION FORM (Shown only if available) */}
+                  {!activeAllocation && (
+                    <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '1.25rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                        Direct Asset Allocation Checkout
+                      </h3>
+                      {canWrite ? (
+                        <form onSubmit={handleCheckout}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                            {/* Target Employee */}
+                            <div className="form-group">
+                              <label className="form-label">Assign to Employee</label>
+                              <select 
+                                className="form-select"
+                                value={newOwnerId}
+                                onChange={(e) => setNewOwnerId(e.target.value)}
+                              >
+                                <option value="">Select Employee...</option>
+                                {employees.filter(emp => emp.status === 'ACTIVE').map(emp => (
+                                  <option key={emp.id} value={emp.id}>
+                                    {emp.name} ({emp.email})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            {/* Expected Return Date */}
+                            <div className="form-group">
+                              <label className="form-label">Expected Return Date (Optional)</label>
+                              <input 
+                                type="date" 
+                                className="form-input" 
+                                value={expectedReturnDate}
+                                onChange={(e) => setExpectedReturnDate(e.target.value)}
+                              />
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                            {/* Condition */}
+                            <div className="form-group">
+                              <label className="form-label">Initial Condition</label>
+                              <select 
+                                className="form-select"
+                                value={checkoutCondition}
+                                onChange={(e) => setCheckoutCondition(e.target.value)}
+                              >
+                                <option value="NEW">New</option>
+                                <option value="GOOD">Good</option>
+                                <option value="FAIR">Fair</option>
+                                <option value="POOR">Poor</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* Checkout Notes */}
+                          <div className="form-group">
+                            <label className="form-label">Checkout Notes</label>
+                            <textarea 
+                              className="form-textarea" 
+                              placeholder="Condition at checkout, instructions..." 
+                              rows={2}
+                              value={checkoutNotes}
+                              onChange={(e) => setCheckoutNotes(e.target.value)}
+                            />
+                          </div>
+
+                          <button 
+                            type="submit" 
+                            className="btn btn-primary"
+                            disabled={checkoutMutation.isPending}
+                          >
+                            {checkoutMutation.isPending ? 'Checking Out...' : 'Check Out Asset'}
+                          </button>
+                        </form>
+                      ) : (
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                          Access Denied: Only Admin or Asset Manager accounts can check out available assets.
+                        </p>
+                      )}
                     </div>
-
-                    <button 
-                      type="submit" 
-                      className="btn btn-primary"
-                      disabled={transferMutation.isPending}
-                    >
-                      {transferMutation.isPending ? 'Submitting...' : 'Submit Transfer Request'}
-                    </button>
-                  </form>
-                </div>
+                  )}
+                </>
               )}
 
-              {/* WORKFLOW 2: DIRECT ALLOCATION FORM (Shown only if available) */}
-              {!activeAllocation && (
-                <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '1.25rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
-                    Direct Asset Allocation Checkout
-                  </h3>
-                  {canWrite ? (
-                    <form onSubmit={handleCheckout}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                        {/* Target Employee */}
-                        <div className="form-group">
-                          <label className="form-label">Assign to Employee</label>
-                          <select 
-                            className="form-select"
-                            value={newOwnerId}
-                            onChange={(e) => setNewOwnerId(e.target.value)}
-                          >
-                            <option value="">Select Employee...</option>
-                            {employees.filter(emp => emp.status === 'ACTIVE').map(emp => (
-                              <option key={emp.id} value={emp.id}>
-                                {emp.name} ({emp.email})
-                              </option>
-                            ))}
-                          </select>
+              {/* TAB 2: TRANSFER REQUEST */}
+              {activeTab === 'TRANSFER' && (
+                <>
+                  {activeAllocation ? (
+                    <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '1.25rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                        Initiate Ownership Transfer
+                      </h3>
+                      <form onSubmit={handleTransferRequest}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                          {/* From current owner */}
+                          <div className="form-group">
+                            <label className="form-label">From Holder (Current)</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              value={activeAllocation.user?.name || ''} 
+                              disabled 
+                            />
+                          </div>
+                          
+                          {/* To new recipient */}
+                          <div className="form-group">
+                            <label className="form-label">To Employee (Recipient)</label>
+                            <select 
+                              className="form-select"
+                              value={transferTargetId}
+                              onChange={(e) => setTransferTargetId(e.target.value)}
+                            >
+                              <option value="">Select Employee...</option>
+                              {employees.filter(emp => emp.id !== activeAllocation.userId && emp.status === 'ACTIVE').map(emp => (
+                                <option key={emp.id} value={emp.id}>
+                                  {emp.name} ({emp.email})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
 
-                        {/* Expected Return Date */}
+                        {/* Reason */}
                         <div className="form-group">
-                          <label className="form-label">Expected Return Date (Optional)</label>
-                          <input 
-                            type="date" 
-                            className="form-input" 
-                            value={expectedReturnDate}
-                            onChange={(e) => setExpectedReturnDate(e.target.value)}
+                          <label className="form-label">Reason for Transfer</label>
+                          <textarea 
+                            className="form-textarea" 
+                            placeholder="State reason for ownership change..." 
+                            rows={3}
+                            value={transferReason}
+                            onChange={(e) => setTransferReason(e.target.value)}
                           />
                         </div>
-                      </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                        {/* Condition */}
-                        <div className="form-group">
-                          <label className="form-label">Initial Condition</label>
-                          <select 
-                            className="form-select"
-                            value={checkoutCondition}
-                            onChange={(e) => setCheckoutCondition(e.target.value)}
-                          >
-                            <option value="NEW">New</option>
-                            <option value="GOOD">Good</option>
-                            <option value="FAIR">Fair</option>
-                            <option value="POOR">Poor</option>
-                          </select>
+                        <button 
+                          type="submit" 
+                          className="btn btn-primary"
+                          disabled={transferMutation.isPending}
+                        >
+                          {transferMutation.isPending ? 'Submitting...' : 'Submit Transfer Request'}
+                        </button>
+                      </form>
+                    </div>
+                  ) : (
+                    // AVAILABLE Info warning
+                    <div style={{ 
+                      background: 'rgba(245, 158, 11, 0.1)', 
+                      border: '1px solid rgba(245, 158, 11, 0.25)', 
+                      borderRadius: '12px', 
+                      padding: '1.25rem', 
+                      marginBottom: '2rem', 
+                      color: '#fde68a' 
+                    }}>
+                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                        <AlertTriangle size={20} style={{ marginTop: '0.15rem' }} />
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>Asset is in Float Pool</div>
+                          <div style={{ fontSize: '0.8rem', opacity: 0.9, marginTop: '0.25rem' }}>
+                            This asset is currently not allocated to anyone. You can only request transfers for active allocations. Use the <strong>Direct Allocation & Return</strong> tab to assign it.
+                          </div>
                         </div>
                       </div>
-
-                      {/* Checkout Notes */}
-                      <div className="form-group">
-                        <label className="form-label">Checkout Notes</label>
-                        <textarea 
-                          className="form-textarea" 
-                          placeholder="Condition at checkout, instructions..." 
-                          rows={2}
-                          value={checkoutNotes}
-                          onChange={(e) => setCheckoutNotes(e.target.value)}
-                        />
-                      </div>
-
-                      <button 
-                        type="submit" 
-                        className="btn btn-primary"
-                        disabled={checkoutMutation.isPending}
-                      >
-                        {checkoutMutation.isPending ? 'Checking Out...' : 'Check Out Asset'}
-                      </button>
-                    </form>
-                  ) : (
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                      Access Denied: Only Admin or Asset Manager accounts can check out available assets.
-                    </p>
+                    </div>
                   )}
-                </div>
+                </>
               )}
 
               {/* TIMELINE: OWNERSHIP HISTORY (Chronological, matching wireframe layout) */}
