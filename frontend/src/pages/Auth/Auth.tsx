@@ -250,7 +250,47 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
               {loading ? <Loader2 size={16} className="spin-animation" style={{ margin: '0 auto' }} /> : 'Log In'}
             </button>
 
-            <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '2rem', paddingTop: '1.5rem', textAlign: 'center' }}>
+            <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '1.25rem', paddingTop: '1rem' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', textAlign: 'center', fontWeight: 700 }}>
+                ⚡ Developer Quick Pass
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.75rem', padding: '0.35rem', margin: 0 }}
+                  onClick={() => onAuthSuccess('admin@assetflow.com', { id: 'sim-admin', name: 'Sarah Connor', email: 'admin@assetflow.com', role: 'ADMIN', departmentId: null })}
+                >
+                  Admin
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.75rem', padding: '0.35rem', margin: 0 }}
+                  onClick={() => onAuthSuccess('manager@assetflow.com', { id: 'sim-manager', name: 'John Doe', email: 'manager@assetflow.com', role: 'ASSET_MANAGER', departmentId: null })}
+                >
+                  Manager
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.75rem', padding: '0.35rem', margin: 0 }}
+                  onClick={() => onAuthSuccess('ithead@assetflow.com', { id: 'sim-ithead', name: 'James Smith', email: 'ithead@assetflow.com', role: 'DEPARTMENT_HEAD', departmentId: 'sim-it-dept' })}
+                >
+                  Dept Head
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.75rem', padding: '0.35rem', margin: 0 }}
+                  onClick={() => onAuthSuccess('employee@assetflow.com', { id: 'sim-employee', name: 'Alex Johnson', email: 'employee@assetflow.com', role: 'EMPLOYEE', departmentId: 'sim-it-dept' })}
+                >
+                  Employee
+                </button>
+              </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '1rem', paddingTop: '1rem', textAlign: 'center' }}>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>New here?</p>
               <button 
                 type="button" 
