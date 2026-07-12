@@ -97,7 +97,7 @@ export const ForbiddenScreen: React.FC = () => {
 // Global App Layout with Left Sidebar + Top Navbar
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
-  const { email, setEmail } = useAuth();
+  const { email, setEmail, logout } = useAuth();
 
   const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setEmail(e.target.value);
