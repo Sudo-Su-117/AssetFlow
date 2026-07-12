@@ -5,6 +5,7 @@ import dashboardRouter from './modules/dashboard/dashboard.routes';
 import departmentRouter from './modules/organization/department/department.routes';
 import categoryRouter from './modules/organization/category/category.routes';
 import employeeRouter from './modules/organization/employee/employee.routes';
+import assetRouter from './modules/assets/asset.routes';
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use('/api/dashboard', dashboardRouter);
 app.use('/api/departments', departmentRouter);
 app.use('/api/categories', categoryRouter);
 app.use('/api/employees', employeeRouter);
+app.use('/api/assets', assetRouter);
 
 // Fallback for unmatched routes
 app.use((req, res) => {

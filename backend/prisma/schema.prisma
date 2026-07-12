@@ -72,7 +72,23 @@ model Asset {
   transfers          Transfer[]
   bookings           Booking[]
   maintenanceRecords Maintenance[]
+  documents          AssetDocument[]
+  condition          String?       // "NEW", "GOOD", "FAIR", "POOR"
+  purchaseDate       DateTime?
+  purchaseCost       Float         @default(0.0)
+  bookable           Boolean       @default(false)
+  imageUrl           String?
+  qrCode             String?
   createdAt          DateTime      @default(now())
+}
+
+model AssetDocument {
+  id        String   @id @default(uuid())
+  name      String
+  url       String
+  assetId   String
+  asset     Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }
 
 model Allocation {

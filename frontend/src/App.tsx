@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Dashboard } from './pages/Dashboard/Dashboard';
 import { Organization } from './pages/Organization/Organization';
+import { Assets } from './pages/Assets/Assets';
 
 const queryClient = new QueryClient();
 
@@ -114,7 +115,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <Settings size={18} />
             Organization Setup
           </Link>
-          <Link to="/assets/register" className={`sidebar-item ${location.pathname.startsWith('/assets') ? 'active' : ''}`}>
+          <Link to="/assets" className={`sidebar-item ${location.pathname.startsWith('/assets') ? 'active' : ''}`}>
             <Package size={18} />
             Assets
           </Link>
@@ -186,11 +187,9 @@ function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/organization" element={<Organization />} />
               
+              <Route path="/assets" element={<Assets />} />
+
               {/* Navigation Placeholders */}
-              <Route 
-                path="/assets/register" 
-                element={<ModulePlaceholder title="Asset Registration" icon={<Package size={32} />} />} 
-              />
               <Route 
                 path="/bookings/new" 
                 element={<ModulePlaceholder title="Resource Booking" icon={<Calendar size={32} />} />} 

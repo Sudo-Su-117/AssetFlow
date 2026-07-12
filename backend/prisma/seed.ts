@@ -163,76 +163,122 @@ async function main() {
   // Asset 1: MacBook Pro (Allocated to Alex Johnson in IT)
   const mbp = await prisma.asset.create({
     data: {
-      assetTag: 'AF-0001',
+      assetTag: 'AF-000001',
       name: 'MacBook Pro 16"',
       categoryId: laptopCat.id,
       status: 'ALLOCATED',
       value: 2400.0,
       expectedReturnDate: tomorrow,
       departmentId: itDept.id,
+      serialNumber: 'SN-MBP-9923',
+      condition: 'NEW',
+      purchaseDate: new Date(now.getTime() - 90*24*60*60*1000),
+      purchaseCost: 2400.0,
+      bookable: false,
+      qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=AF-000001'
     },
   });
 
   // Asset 2: Office Chair (Available in Operations)
   const chair = await prisma.asset.create({
     data: {
-      assetTag: 'AF-0002',
+      assetTag: 'AF-000002',
       name: 'Ergonomic Office Chair',
       categoryId: furnitureCat.id,
       status: 'AVAILABLE',
       value: 350.0,
       departmentId: opsDept.id,
+      serialNumber: 'SN-CHR-0044',
+      condition: 'GOOD',
+      purchaseDate: new Date(now.getTime() - 120*24*60*60*1000),
+      purchaseCost: 350.0,
+      bookable: false,
+      qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=AF-000002'
     },
   });
 
   // Asset 3: Dell Monitor (Under Maintenance in IT)
   const monitor = await prisma.asset.create({
     data: {
-      assetTag: 'AF-0003',
+      assetTag: 'AF-000003',
       name: 'Dell UltraSharp 27" Monitor',
       categoryId: electronicsCat.id,
       status: 'UNDER_MAINTENANCE',
       value: 500.0,
       departmentId: itDept.id,
+      serialNumber: 'SN-MON-5152',
+      condition: 'FAIR',
+      purchaseDate: new Date(now.getTime() - 365*24*60*60*1000),
+      purchaseCost: 500.0,
+      bookable: false,
+      qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=AF-000003'
     },
   });
 
   // Asset 4: iPad Pro (Allocated to Alex Johnson in IT, expected return: 3 days ago - OVERDUE!)
   const ipad = await prisma.asset.create({
     data: {
-      assetTag: 'AF-0004',
+      assetTag: 'AF-000004',
       name: 'iPad Pro 11"',
       categoryId: tabletCat.id,
       status: 'ALLOCATED',
       value: 900.0,
       expectedReturnDate: threeDaysAgo,
       departmentId: itDept.id,
+      serialNumber: 'SN-IPD-8812',
+      condition: 'GOOD',
+      purchaseDate: new Date(now.getTime() - 60*24*60*60*1000),
+      purchaseCost: 900.0,
+      bookable: false,
+      qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=AF-000004'
     },
   });
 
   // Asset 5: Projector (Available in Operations)
   const projector = await prisma.asset.create({
     data: {
-      assetTag: 'AF-0005',
+      assetTag: 'AF-000005',
       name: 'Epson 4K Projector',
       categoryId: electronicsCat.id,
       status: 'AVAILABLE',
       value: 1200.0,
       departmentId: opsDept.id,
+      serialNumber: 'SN-PRJ-1152',
+      condition: 'GOOD',
+      purchaseDate: new Date(now.getTime() - 10*24*60*60*1000),
+      purchaseCost: 1200.0,
+      bookable: true,
+      qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=AF-000005'
     },
   });
 
   // Asset 6: Laptop AF-0114 (Allocated to Priya Sharma in HR)
   const hrLaptop = await prisma.asset.create({
     data: {
-      assetTag: 'AF-0114',
+      assetTag: 'AF-000114', // Using a longer serial tag but compliant with increment formats
       name: 'ThinkPad T14',
       categoryId: laptopCat.id,
       status: 'ALLOCATED',
       value: 1500.0,
       expectedReturnDate: fiveDaysLater,
       departmentId: hrDept.id,
+      serialNumber: 'SN-THK-1049',
+      condition: 'NEW',
+      purchaseDate: new Date(now.getTime() - 5*24*60*60*1000),
+      purchaseCost: 1500.0,
+      bookable: false,
+      qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=AF-000114'
     },
+  });
+
+  console.log('Seeding asset documents...');
+  await prisma.assetDocument.createMany({
+    data: [
+      { name: 'MacBook_Invoice.pdf', url: '/documents/invoice-001.pdf', assetId: mbp.id },
+      { name: 'MacBook_Warranty.pdf', url: '/documents/warranty-001.pdf', assetId: mbp.id },
+      { name: 'Monitor_User_Manual.pdf', url: '/documents/manual-003.pdf', assetId: monitor.id },
+      { name: 'Projector_Specs_Sheet.pdf', url: '/documents/specs-005.pdf', assetId: projector.id }
+    ]
   });
 
   console.log('Seeding allocations...');
