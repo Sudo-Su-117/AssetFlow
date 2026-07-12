@@ -36,10 +36,9 @@ export class ReportsService {
         return reqDate.getMonth() === idx && reqDate.getFullYear() === currentYear;
       }).length;
       
-      // Default baseline counts for seeded assets to display clean lines on charts
       return {
         month: m,
-        count: count || (idx % 3 === 0 ? 3 : idx % 2 === 0 ? 1 : 2)
+        count
       };
     });
 
