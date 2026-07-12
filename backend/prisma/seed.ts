@@ -11,14 +11,54 @@ async function main() {
   await prisma.transfer.deleteMany();
   await prisma.allocation.deleteMany();
   await prisma.asset.deleteMany();
+  await prisma.assetCategory.deleteMany();
   await prisma.user.deleteMany();
   await prisma.department.deleteMany();
 
   console.log('Seeding departments...');
-  const itDept = await prisma.department.create({ data: { name: 'IT' } });
-  const hrDept = await prisma.department.create({ data: { name: 'HR' } });
-  const opsDept = await prisma.department.create({ data: { name: 'Operations' } });
-  const finDept = await prisma.department.create({ data: { name: 'Finance' } });
+  const itDept = await prisma.department.create({ 
+    data: { 
+      name: 'IT', 
+      departmentCode: 'IT-DEPT', 
+      status: 'ACTIVE' 
+    } 
+  });
+  const hrDept = await prisma.department.create({ 
+    data: { 
+      name: 'HR', 
+      departmentCode: 'HR-DEPT', 
+      status: 'ACTIVE' 
+    } 
+  });
+  const opsDept = await prisma.department.create({ 
+    data: { 
+      name: 'Operations', 
+      departmentCode: 'OPS-DEPT', 
+      status: 'ACTIVE' 
+    } 
+  });
+  const finDept = await prisma.department.create({ 
+    data: { 
+      name: 'Finance', 
+      departmentCode: 'FIN-DEPT', 
+      status: 'ACTIVE',
+      parentDepartmentId: opsDept.id // Finance sits under Operations for testing hierarchy
+    } 
+  });
+
+  console.log('Seeding categories...');
+  const laptopCat = await prisma.assetCategory.create({
+    data: { name: 'LAPTOP', description: 'Portable workstations and accessories', customFields: 'RAM,Storage,Processor' }
+  });
+  const furnitureCat = await prisma.assetCategory.create({
+    data: { name: 'FURNITURE', description: 'Office tables, chairs, and desks', customFields: 'Material,Dimensions' }
+  });
+  const electronicsCat = await prisma.assetCategory.create({
+    data: { name: 'ELECTRONICS', description: 'Monitors, projectors, and adapters', customFields: 'Resolution,Power Rating' }
+  });
+  const tabletCat = await prisma.assetCategory.create({
+    data: { name: 'TABLET', description: 'iPads and mobile devices', customFields: 'OS,Storage,Warranty' }
+  });
 
   console.log('Seeding users...');
   // 1. Admin
@@ -27,6 +67,7 @@ async function main() {
       name: 'Sarah Connor',
       email: 'admin@assetflow.com',
       role: 'ADMIN',
+      status: 'ACTIVE'
     },
   });
 
@@ -36,6 +77,7 @@ async function main() {
       name: 'John Doe',
       email: 'manager@assetflow.com',
       role: 'ASSET_MANAGER',
+      status: 'ACTIVE'
     },
   });
 
@@ -46,6 +88,7 @@ async function main() {
       email: 'ithead@assetflow.com',
       role: 'DEPARTMENT_HEAD',
       departmentId: itDept.id,
+      status: 'ACTIVE'
     },
   });
 
@@ -55,7 +98,19 @@ async function main() {
       email: 'hrhead@assetflow.com',
       role: 'DEPARTMENT_HEAD',
       departmentId: hrDept.id,
+      status: 'ACTIVE'
     },
+  });
+
+  // Set Heads on Departments
+  await prisma.department.update({
+    where: { id: itDept.id },
+    data: { headEmployeeId: itHead.id }
+  });
+
+  await prisma.department.update({
+    where: { id: hrDept.id },
+    data: { headEmployeeId: hrHead.id }
   });
 
   // 4. Employees
@@ -65,6 +120,7 @@ async function main() {
       email: 'employee@assetflow.com',
       role: 'EMPLOYEE',
       departmentId: itDept.id,
+      status: 'ACTIVE'
     },
   });
 
@@ -74,7 +130,19 @@ async function main() {
       email: 'priya@assetflow.com',
       role: 'EMPLOYEE',
       departmentId: hrDept.id,
+      status: 'ACTIVE'
     },
+  });
+
+  // Inactive Employee for setup tables testing
+  await prisma.user.create({
+    data: {
+      name: 'Former Colleague',
+      email: 'inactive@assetflow.com',
+      role: 'EMPLOYEE',
+      departmentId: itDept.id,
+      status: 'INACTIVE'
+    }
   });
 
   console.log('Seeding assets...');
@@ -92,12 +160,12 @@ async function main() {
   const tenDaysLater = new Date();
   tenDaysLater.setDate(now.getDate() + 10);
 
-  // Asset 1: MacBook Pro (Allocated to Alex Johnson in IT, expected return: tomorrow)
+  // Asset 1: MacBook Pro (Allocated to Alex Johnson in IT)
   const mbp = await prisma.asset.create({
     data: {
       assetTag: 'AF-0001',
       name: 'MacBook Pro 16"',
-      category: 'LAPTOP',
+      categoryId: laptopCat.id,
       status: 'ALLOCATED',
       value: 2400.0,
       expectedReturnDate: tomorrow,
@@ -110,7 +178,7 @@ async function main() {
     data: {
       assetTag: 'AF-0002',
       name: 'Ergonomic Office Chair',
-      category: 'FURNITURE',
+      categoryId: furnitureCat.id,
       status: 'AVAILABLE',
       value: 350.0,
       departmentId: opsDept.id,
@@ -122,7 +190,7 @@ async function main() {
     data: {
       assetTag: 'AF-0003',
       name: 'Dell UltraSharp 27" Monitor',
-      category: 'ELECTRONICS',
+      categoryId: electronicsCat.id,
       status: 'UNDER_MAINTENANCE',
       value: 500.0,
       departmentId: itDept.id,
@@ -134,7 +202,7 @@ async function main() {
     data: {
       assetTag: 'AF-0004',
       name: 'iPad Pro 11"',
-      category: 'TABLET',
+      categoryId: tabletCat.id,
       status: 'ALLOCATED',
       value: 900.0,
       expectedReturnDate: threeDaysAgo,
@@ -147,19 +215,19 @@ async function main() {
     data: {
       assetTag: 'AF-0005',
       name: 'Epson 4K Projector',
-      category: 'ELECTRONICS',
+      categoryId: electronicsCat.id,
       status: 'AVAILABLE',
       value: 1200.0,
       departmentId: opsDept.id,
     },
   });
 
-  // Asset 6: Laptop AF-0114 (Allocated to Priya Sharma in HR, expected return: 5 days later)
+  // Asset 6: Laptop AF-0114 (Allocated to Priya Sharma in HR)
   const hrLaptop = await prisma.asset.create({
     data: {
       assetTag: 'AF-0114',
       name: 'ThinkPad T14',
-      category: 'LAPTOP',
+      categoryId: laptopCat.id,
       status: 'ALLOCATED',
       value: 1500.0,
       expectedReturnDate: fiveDaysLater,
@@ -177,7 +245,6 @@ async function main() {
   });
 
   console.log('Seeding transfers...');
-  // Transfer request: Chair from Operations to IT (Pending)
   await prisma.transfer.create({
     data: {
       assetId: chair.id,
@@ -190,9 +257,8 @@ async function main() {
   });
 
   console.log('Seeding bookings...');
-  // Active booking for Epson Projector by IT Employee
-  const bookingStart = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
-  const bookingEnd = new Date(now.getTime() + 2 * 60 * 60 * 1000); // 2 hours from now
+  const bookingStart = new Date(now.getTime() - 60 * 60 * 1000);
+  const bookingEnd = new Date(now.getTime() + 2 * 60 * 60 * 1000);
   await prisma.booking.create({
     data: {
       assetId: projector.id,
@@ -205,7 +271,6 @@ async function main() {
   });
 
   console.log('Seeding maintenance...');
-  // Dell Monitor currently under maintenance
   await prisma.maintenance.create({
     data: {
       assetId: monitor.id,
@@ -218,7 +283,6 @@ async function main() {
   });
 
   console.log('Seeding notifications...');
-  // Overdue alerts
   await prisma.notification.createMany({
     data: [
       {
@@ -252,19 +316,19 @@ async function main() {
         type: 'ASSET_ALLOCATED',
         message: 'Laptop AF-0114 assigned to Priya Sharma',
         userId: employeeHr.id,
-        createdAt: new Date(now.getTime() - 2 * 60 * 1000), // 2 min ago
+        createdAt: new Date(now.getTime() - 2 * 60 * 1000),
       },
       {
         type: 'TRANSFER_REQUESTED',
         message: 'Alex Johnson requested transfer of Ergonomic Office Chair (AF-0002) to IT',
         userId: employeeIt.id,
-        createdAt: new Date(now.getTime() - 15 * 60 * 1000), // 15 min ago
+        createdAt: new Date(now.getTime() - 15 * 60 * 1000),
       },
       {
         type: 'MAINTENANCE_CREATED',
         message: 'Maintenance ticket raised for Dell UltraSharp 27" Monitor (AF-0003)',
         userId: itHead.id,
-        createdAt: new Date(now.getTime() - 2 * 60 * 60 * 1000), // 2 hours ago
+        createdAt: new Date(now.getTime() - 2 * 60 * 60 * 1000),
       },
       {
         type: 'ASSET_ALLOCATED',

@@ -19,18 +19,10 @@ import { AlertBanner } from './components/AlertBanner';
 import { RecentActivity } from './components/RecentActivity';
 import { QuickActions } from './components/QuickActions';
 import { OverviewGrid } from './components/OverviewGrid';
-
-const ROLES = [
-  { label: 'Admin (Sarah Connor)', email: 'admin@assetflow.com', role: 'ADMIN' },
-  { label: 'Asset Manager (John Doe)', email: 'manager@assetflow.com', role: 'ASSET_MANAGER' },
-  { label: 'IT Department Head (James Smith)', email: 'ithead@assetflow.com', role: 'DEPARTMENT_HEAD (IT)' },
-  { label: 'HR Department Head (Emily Davis)', email: 'hrhead@assetflow.com', role: 'DEPARTMENT_HEAD (HR)' },
-  { label: 'Employee (Alex Johnson - IT)', email: 'employee@assetflow.com', role: 'EMPLOYEE (IT)' },
-  { label: 'Employee (Priya Sharma - HR)', email: 'priya@assetflow.com', role: 'EMPLOYEE (HR)' }
-];
+import { useAuth } from '../../App';
 
 export const Dashboard: React.FC = () => {
-  const [selectedUserEmail, setSelectedUserEmail] = useState(ROLES[0].email);
+  const { email: selectedUserEmail } = useAuth();
   const [lastUpdated, setLastUpdated] = useState<string>('');
 
   const { 
@@ -48,10 +40,6 @@ export const Dashboard: React.FC = () => {
       setLastUpdated(now.toLocaleTimeString());
     }
   }, [data]);
-
-  const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedUserEmail(e.target.value);
-  };
 
   const handleManualRefresh = () => {
     refetch();
@@ -105,11 +93,6 @@ export const Dashboard: React.FC = () => {
             <button className="btn btn-primary" onClick={handleManualRefresh}>
               <RefreshCw size={16} /> Try Again
             </button>
-            <select className="role-select" value={selectedUserEmail} onChange={handleRoleChange}>
-              {ROLES.map((r) => (
-                <option key={r.email} value={r.email}>{r.label}</option>
-              ))}
-            </select>
           </div>
         </div>
       </div>
@@ -138,17 +121,7 @@ export const Dashboard: React.FC = () => {
             </span>
           )}
 
-          {/* Role selector dropdown */}
-          <select 
-            className="role-select" 
-            value={selectedUserEmail} 
-            onChange={handleRoleChange}
-            title="Switch User Role to view scoped data"
-          >
-            {ROLES.map((r) => (
-              <option key={r.email} value={r.email}>{r.label}</option>
-            ))}
-          </select>
+          {/* Managed by global topbar */}
 
           {/* Manual Refetch Button */}
           <button 

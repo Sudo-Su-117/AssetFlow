@@ -2,6 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import dashboardRouter from './modules/dashboard/dashboard.routes';
+import departmentRouter from './modules/organization/department/department.routes';
+import categoryRouter from './modules/organization/category/category.routes';
+import employeeRouter from './modules/organization/employee/employee.routes';
 
 dotenv.config();
 
@@ -19,6 +22,9 @@ app.use(express.json());
 
 // Register API Routes
 app.use('/api/dashboard', dashboardRouter);
+app.use('/api/departments', departmentRouter);
+app.use('/api/categories', categoryRouter);
+app.use('/api/employees', employeeRouter);
 
 // Fallback for unmatched routes
 app.use((req, res) => {
