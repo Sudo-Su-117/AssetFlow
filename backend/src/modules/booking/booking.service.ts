@@ -146,6 +146,24 @@ export class BookingService {
       }
     });
 
+    // Write Notification
+    await prisma.notification.create({
+      data: {
+        userId: user.id,
+        message: `Resource Booking Confirmed: ${booking.asset.name} reserved for ${start.toLocaleDateString()} ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`,
+        type: 'BOOKING'
+      }
+    });
+
+    // Write Activity Log
+    await prisma.activityLog.create({
+      data: {
+        type: 'ASSET_CREATED',
+        message: `Resource ${booking.asset.name} booked by ${booking.user.name}.`,
+        userId: user.id
+      }
+    });
+
     return {
       ...booking,
       status: this.mapDynamicStatus(booking)
@@ -237,6 +255,24 @@ export class BookingService {
       include: {
         asset: true,
         user: true
+      }
+    });
+
+    // Write Notification
+    await prisma.notification.create({
+      data: {
+        userId: updated.userId,
+        message: `Resource Booking Cancelled: ${updated.asset.name} reservation has been cancelled.`,
+        type: 'BOOKING'
+      }
+    });
+
+    // Write Activity Log
+    await prisma.activityLog.create({
+      data: {
+        type: 'ASSET_CREATED',
+        message: `Resource booking for ${updated.asset.name} cancelled by ${updated.user.name}.`,
+        userId: user.id
       }
     });
 

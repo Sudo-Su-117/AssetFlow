@@ -3,17 +3,37 @@ import { UserContext } from '../../services/analytics.service';
 
 export class MaintenanceService {
   static async getMaintenanceRequests(user: UserContext) {
-    const { role, id: userId } = user;
+    const { role, id: userId, departmentId } = user;
 
-    // Employees can only view repairs they raised.
-    // Managers, Admins, and Technicians can see all maintenance requests.
-    const whereClause = role === 'EMPLOYEE' ? { requestedById: userId } : {};
+    if (role === 'ADMIN' || role === 'ASSET_MANAGER') {
+      return prisma.maintenance.findMany({
+        include: {
+          asset: true,
+          requestedBy: true
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+    }
 
+    if (role === 'DEPARTMENT_HEAD' && departmentId) {
+      return prisma.maintenance.findMany({
+        where: {
+          asset: { departmentId }
+        },
+        include: {
+          asset: true,
+          requestedBy: true
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+    }
+
+    // Employees only see their own requested maintenance tickets
     return prisma.maintenance.findMany({
-      where: whereClause,
+      where: { requestedById: userId },
       include: {
-        asset: { select: { id: true, assetTag: true, name: true, status: true, condition: true } },
-        requestedBy: { select: { id: true, name: true, email: true } }
+        asset: true,
+        requestedBy: true
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -32,8 +52,7 @@ export class MaintenanceService {
       throw new Error('Asset not found.');
     }
 
-    // Creating request defaults status to PENDING. Asset lifecycle remains unchanged.
-    return prisma.maintenance.create({
+    const request = await prisma.maintenance.create({
       data: {
         assetId: data.assetId,
         description: data.description,
@@ -45,6 +64,26 @@ export class MaintenanceService {
         asset: true
       }
     });
+
+    // Create Notification
+    await prisma.notification.create({
+      data: {
+        userId: user.id,
+        message: `Maintenance request created for ${request.asset.name} (${request.asset.assetTag}).`,
+        type: 'GENERAL'
+      }
+    });
+
+    // Create Activity Log
+    await prisma.activityLog.create({
+      data: {
+        type: 'MAINTENANCE_CREATED',
+        message: `Maintenance request created for ${request.asset.name} (${request.asset.assetTag}).`,
+        userId: user.id
+      }
+    });
+
+    return request;
   }
 
   static async approveRequest(user: UserContext, id: string) {
@@ -60,7 +99,7 @@ export class MaintenanceService {
       throw new Error('Only PENDING requests can be approved.');
     }
 
-    return prisma.$transaction(async (tx) => {
+    const approved = await prisma.$transaction(async (tx) => {
       // 1. Move card to APPROVED
       const updated = await tx.maintenance.update({
         where: { id },
@@ -79,6 +118,28 @@ export class MaintenanceService {
 
       return updated;
     });
+
+    // Create Notification for requester if exists
+    if (approved.requestedById) {
+      await prisma.notification.create({
+        data: {
+          userId: approved.requestedById,
+          message: `Maintenance request approved for ${approved.asset.name} (${approved.asset.assetTag}). Asset is now under maintenance.`,
+          type: 'GENERAL'
+        }
+      });
+    }
+
+    // Create Activity Log
+    await prisma.activityLog.create({
+      data: {
+        type: 'MAINTENANCE_CREATED',
+        message: `Maintenance approved for ${approved.asset.name} (${approved.asset.assetTag}).`,
+        userId: user.id
+      }
+    });
+
+    return approved;
   }
 
   static async assignTechnician(
@@ -98,12 +159,11 @@ export class MaintenanceService {
       throw new Error('Maintenance request not found.');
     }
     
-    // Technicians can only be assigned to approved requests.
     if (request.status !== 'APPROVED') {
       throw new Error('Requests must be APPROVED before technician assignment.');
     }
 
-    return prisma.maintenance.update({
+    const updated = await prisma.maintenance.update({
       where: { id },
       data: {
         status: 'TECHNICIAN_ASSIGNED',
@@ -112,6 +172,17 @@ export class MaintenanceService {
       },
       include: { asset: true }
     });
+
+    // Create Activity Log
+    await prisma.activityLog.create({
+      data: {
+        type: 'MAINTENANCE_CREATED',
+        message: `Technician ${data.assignedTechnician} assigned to repair for ${updated.asset.name} (${updated.asset.assetTag}).`,
+        userId: user.id
+      }
+    });
+
+    return updated;
   }
 
   static async startWork(user: UserContext, id: string) {
@@ -120,12 +191,11 @@ export class MaintenanceService {
       throw new Error('Maintenance request not found.');
     }
 
-    // Start work allowed for assigned technician or managers/admins
     if (request.status !== 'TECHNICIAN_ASSIGNED') {
       throw new Error('Only requests in TECHNICIAN_ASSIGNED status can move to IN_PROGRESS.');
     }
 
-    return prisma.maintenance.update({
+    const updated = await prisma.maintenance.update({
       where: { id },
       data: {
         status: 'IN_PROGRESS',
@@ -133,6 +203,17 @@ export class MaintenanceService {
       },
       include: { asset: true }
     });
+
+    // Create Activity Log
+    await prisma.activityLog.create({
+      data: {
+        type: 'MAINTENANCE_CREATED',
+        message: `Work started on ${updated.asset.name} (${updated.asset.assetTag}).`,
+        userId: user.id
+      }
+    });
+
+    return updated;
   }
 
   static async resolveRequest(
@@ -157,7 +238,7 @@ export class MaintenanceService {
       throw new Error('Resolution notes are mandatory during closure.');
     }
 
-    return prisma.$transaction(async (tx) => {
+    const resolved = await prisma.$transaction(async (tx) => {
       // 1. Mark request as RESOLVED
       const updated = await tx.maintenance.update({
         where: { id },
@@ -181,5 +262,27 @@ export class MaintenanceService {
 
       return updated;
     });
+
+    // Create Notification for requester
+    if (resolved.requestedById) {
+      await prisma.notification.create({
+        data: {
+          userId: resolved.requestedById,
+          message: `Maintenance request resolved for ${resolved.asset.name} (${resolved.asset.assetTag}). Final condition: ${data.finalCondition || 'GOOD'}.`,
+          type: 'GENERAL'
+        }
+      });
+    }
+
+    // Create Activity Log
+    await prisma.activityLog.create({
+      data: {
+        type: 'MAINTENANCE_CREATED',
+        message: `Maintenance ticket resolved for ${resolved.asset.name} (${resolved.asset.assetTag}).`,
+        userId: user.id
+      }
+    });
+
+    return resolved;
   }
 }

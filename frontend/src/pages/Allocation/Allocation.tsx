@@ -91,6 +91,7 @@ export const Allocation: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['allocationDetails', selectedAssetId] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['reportsOverview'] });
       setNewOwnerId('');
       setCheckoutNotes('');
       setExpectedReturnDate('');
@@ -103,6 +104,7 @@ export const Allocation: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['allocationDetails', selectedAssetId] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['reportsOverview'] });
       setReturnDialogOpen(false);
       setReturnNotes('');
     }
@@ -124,6 +126,7 @@ export const Allocation: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['transfers'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['reportsOverview'] });
       if (selectedAssetId) {
         refetchDetails();
       }

@@ -303,12 +303,14 @@ async function main() {
   }
 
   console.log('Seeding 10 notifications...');
+  const notifTypes = ['OVERDUE_RETURN', 'TRANSFER_REQUEST', 'BOOKING', 'GENERAL'];
   for (let i = 1; i <= 10; i++) {
+    const type = notifTypes[i % notifTypes.length];
     await prisma.notification.create({
       data: {
         userId: alexUser!.id,
-        message: `Alert context message #${i}: System configuration checks.`,
-        type: 'GENERAL',
+        message: `Alert context message #${i}: System configuration checks for type ${type}.`,
+        type,
         isRead: false,
         createdAt: new Date(now.getTime() - i * 4 * 60 * 60 * 1000),
       },

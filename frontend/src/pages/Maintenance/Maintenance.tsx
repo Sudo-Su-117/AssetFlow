@@ -61,6 +61,7 @@ export const Maintenance: React.FC = () => {
     mutationFn: (data: any) => createMaintenanceRequest(email, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenance'] });
+      queryClient.invalidateQueries({ queryKey: ['reportsOverview'] });
       setReportOpen(false);
       setAssetId('');
       setDescription('');
@@ -73,6 +74,7 @@ export const Maintenance: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['maintenance'] });
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['reportsOverview'] });
     }
   });
 
@@ -98,6 +100,7 @@ export const Maintenance: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['maintenance'] });
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['reportsOverview'] });
       setResolveOpen(false);
       setSelectedReqId(null);
       setResolutionNotes('');

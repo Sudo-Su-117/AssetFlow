@@ -88,6 +88,7 @@ export const Audit: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['auditDetails', selectedAuditId] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['reportsOverview'] });
     }
   });
 
@@ -98,6 +99,7 @@ export const Audit: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['auditDetails', selectedAuditId] });
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['reportsOverview'] });
       alert('Audit Cycle successfully closed and locked. All discrepancies logged.');
     }
   });

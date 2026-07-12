@@ -60,6 +60,7 @@ export const Booking: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['availability'] });
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['reportsOverview'] });
       setModalOpen(false);
       setPurpose('');
       setConflictError(null);
@@ -72,6 +73,7 @@ export const Booking: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['availability'] });
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['reportsOverview'] });
     }
   });
 

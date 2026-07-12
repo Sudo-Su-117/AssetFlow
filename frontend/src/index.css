@@ -48,6 +48,46 @@
   --glass-blur: blur(12px);
 }
 
+/* Light Mode Overrides */
+[data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-card-hover: rgba(255, 255, 255, 0.98);
+  
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-glow: rgba(59, 130, 246, 0.15);
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  
+  --shadow-premium: 0 10px 30px -10px rgba(0, 0, 0, 0.06);
+  --glass-blur: blur(8px);
+}
+
+[data-theme="light"] .title-area h1 {
+  background: linear-gradient(135deg, #0f172a 40%, #1e3a8a 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* Form inputs & select dropdown option styling fix */
+select option, .form-select option, .role-select option {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+select, .form-select, .role-select {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+.form-input, .form-textarea {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
 /* Global Reset & Base */
 * {
   box-sizing: border-box;

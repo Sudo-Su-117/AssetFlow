@@ -2,37 +2,70 @@ import prisma from '../../db';
 import { UserContext } from '../../services/analytics.service';
 
 export class TransferService {
-  static async getTransfers() {
+  static async getTransfers(user: UserContext) {
+    const { role, id: userId, departmentId } = user;
+
+    if (role === 'ADMIN' || role === 'ASSET_MANAGER') {
+      return prisma.transfer.findMany({
+        include: {
+          asset: true,
+          fromDepartment: true,
+          toDepartment: true,
+          requestedBy: true,
+          approvedBy: true,
+          fromUser: true,
+          toUser: true
+        },
+        orderBy: { requestedAt: 'desc' }
+      });
+    }
+
+    // Managers/Heads see department-scoped requests
+    if (role === 'DEPARTMENT_HEAD' && departmentId) {
+      return prisma.transfer.findMany({
+        where: {
+          OR: [
+            { fromDepartmentId: departmentId },
+            { toDepartmentId: departmentId }
+          ]
+        },
+        include: {
+          asset: true,
+          fromDepartment: true,
+          toDepartment: true,
+          requestedBy: true,
+          approvedBy: true,
+          fromUser: true,
+          toUser: true
+        },
+        orderBy: { requestedAt: 'desc' }
+      });
+    }
+
+    // Employees only see their own requested transfers
     return prisma.transfer.findMany({
+      where: { requestedById: userId },
       include: {
-        asset: { select: { id: true, assetTag: true, name: true, status: true } },
-        fromUser: { select: { id: true, name: true, email: true } },
-        toUser: { select: { id: true, name: true, email: true } },
-        requestedBy: { select: { id: true, name: true } },
-        approvedBy: { select: { id: true, name: true } }
+        asset: true,
+        fromDepartment: true,
+        toDepartment: true,
+        requestedBy: true,
+        approvedBy: true,
+        fromUser: true,
+        toUser: true
       },
       orderBy: { requestedAt: 'desc' }
     });
   }
 
-  static async createTransferRequest(
-    user: UserContext,
-    data: {
-      assetId: string;
-      toUserId: string;
-      reason: string;
-    }
-  ) {
-    // 1. Verify Target User is Active
+  static async createTransferRequest(user: UserContext, data: { assetId: string; toUserId: string; reason: string }) {
+    // 1. Resolve Recipient User Profile
     const toUser = await prisma.user.findUnique({ where: { id: data.toUserId } });
     if (!toUser) {
       throw new Error('Target employee not found.');
     }
-    if (toUser.status === 'INACTIVE') {
-      throw new Error('Cannot transfer assets to an inactive employee.');
-    }
 
-    // 2. Locate Active Owner for the Asset
+    // 2. Validate current allocation checkout status
     const activeAlloc = await prisma.allocation.findFirst({
       where: { assetId: data.assetId, status: 'ACTIVE' },
       include: { user: true }
@@ -47,7 +80,7 @@ export class TransferService {
     }
 
     // 3. Create Transfer record
-    return prisma.transfer.create({
+    const transfer = await prisma.transfer.create({
       data: {
         assetId: data.assetId,
         fromDepartmentId: activeAlloc.user.departmentId || 'UNASSIGNED',
@@ -64,15 +97,33 @@ export class TransferService {
         toUser: true
       }
     });
+
+    // 4. Create Notification
+    await prisma.notification.create({
+      data: {
+        userId: transfer.toUserId!,
+        message: `Ownership Transfer requested: ${transfer.fromUser?.name || 'Someone'} wants to transfer ${transfer.asset.name} (${transfer.asset.assetTag}) to you.`,
+        type: 'TRANSFER_REQUEST'
+      }
+    });
+
+    // 5. Create Activity Log
+    await prisma.activityLog.create({
+      data: {
+        type: 'TRANSFER_REQUESTED',
+        message: `Transfer request initiated for ${transfer.asset.name} (${transfer.asset.assetTag}) from ${transfer.fromUser?.name || 'Sender'} to ${transfer.toUser?.name || 'Recipient'}.`,
+        userId: user.id
+      }
+    });
+
+    return transfer;
   }
 
   static async approveTransfer(user: UserContext, id: string) {
-    // Restrict approval actions to Admin / Asset Manager
     if (user.role !== 'ADMIN' && user.role !== 'ASSET_MANAGER') {
       throw new Error('Forbidden: Admin or Asset Manager privileges required.');
     }
 
-    // 1. Retrieve Request Details
     const transfer = await prisma.transfer.findUnique({
       where: { id },
       include: {
@@ -87,8 +138,8 @@ export class TransferService {
       throw new Error('Transfer request is already resolved.');
     }
 
-    // 2. TRANSACTION: Close previous checkout + Open new checkout + Update asset
-    return prisma.$transaction(async (tx) => {
+    // TRANSACTION: Close previous checkout + Open new checkout + Update asset
+    const approvedTx = await prisma.$transaction(async (tx) => {
       // A. Close active allocation for original holder
       const activeAlloc = await tx.allocation.findFirst({
         where: { assetId: transfer.assetId, userId: transfer.fromUserId!, status: 'ACTIVE' }
@@ -127,7 +178,7 @@ export class TransferService {
         }
       });
 
-      // D. Update transfer status banner
+      // D. Update transfer status
       return tx.transfer.update({
         where: { id },
         data: {
@@ -142,6 +193,35 @@ export class TransferService {
         }
       });
     });
+
+    // Create Notification for recipient
+    await prisma.notification.create({
+      data: {
+        userId: approvedTx.toUserId!,
+        message: `Ownership Transfer Approved: ${approvedTx.asset.name} (${approvedTx.asset.assetTag}) is now allocated to you.`,
+        type: 'TRANSFER_REQUEST'
+      }
+    });
+
+    // Create Notification for original holder
+    await prisma.notification.create({
+      data: {
+        userId: approvedTx.fromUserId!,
+        message: `Ownership Transfer Completed: ${approvedTx.asset.name} (${approvedTx.asset.assetTag}) has been transferred to ${approvedTx.toUser?.name}.`,
+        type: 'TRANSFER_REQUEST'
+      }
+    });
+
+    // Create Activity Log
+    await prisma.activityLog.create({
+      data: {
+        type: 'TRANSFER_REQUESTED',
+        message: `Transfer approved for ${approvedTx.asset.name} (${approvedTx.asset.assetTag}) to ${approvedTx.toUser?.name}.`,
+        userId: user.id
+      }
+    });
+
+    return approvedTx;
   }
 
   static async rejectTransfer(user: UserContext, id: string) {
@@ -149,7 +229,10 @@ export class TransferService {
       throw new Error('Forbidden: Admin or Asset Manager privileges required.');
     }
 
-    const transfer = await prisma.transfer.findUnique({ where: { id } });
+    const transfer = await prisma.transfer.findUnique({
+      where: { id },
+      include: { asset: true }
+    });
     if (!transfer) {
       throw new Error('Transfer request not found.');
     }
@@ -157,13 +240,38 @@ export class TransferService {
       throw new Error('Transfer request is already resolved.');
     }
 
-    return prisma.transfer.update({
+    const updated = await prisma.transfer.update({
       where: { id },
       data: {
         status: 'REJECTED',
         approvedById: user.id,
         approvedAt: new Date()
+      },
+      include: {
+        asset: true,
+        fromUser: true,
+        toUser: true
       }
     });
+
+    // Create Notification for requester
+    await prisma.notification.create({
+      data: {
+        userId: updated.requestedById,
+        message: `Ownership Transfer Rejected: request for ${updated.asset.name} (${updated.asset.assetTag}) was rejected.`,
+        type: 'TRANSFER_REQUEST'
+      }
+    });
+
+    // Create Activity Log
+    await prisma.activityLog.create({
+      data: {
+        type: 'TRANSFER_REQUESTED',
+        message: `Transfer request rejected for ${updated.asset.name} (${updated.asset.assetTag}).`,
+        userId: user.id
+      }
+    });
+
+    return updated;
   }
 }

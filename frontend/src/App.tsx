@@ -13,7 +13,9 @@ import {
   BarChart3, 
   Bell,
   ArrowLeft,
-  ShieldAlert
+  ShieldAlert,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { Dashboard } from './pages/Dashboard/Dashboard';
 import { Organization } from './pages/Organization/Organization';
@@ -43,6 +45,8 @@ interface AuthContextType {
   setEmail: (email: string) => void;
   currentRole: { label?: string; name?: string; email: string; role: string; id?: string };
   logout: () => void;
+  theme: 'dark' | 'light';
+  toggleTheme: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -95,9 +99,9 @@ export const ForbiddenScreen: React.FC = () => {
 };
 
 // Global App Layout with Left Sidebar + Top Navbar
-const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
-  const { email, setEmail, logout } = useAuth();
+  const { logout, email, setEmail, theme, toggleTheme } = useAuth();
 
   const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setEmail(e.target.value);
@@ -174,13 +178,24 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </select>
           </div>
           
-          <button 
-            onClick={logout}
-            className="btn btn-secondary"
-            style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem', margin: 0 }}
-          >
-            Log Out
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button 
+              onClick={toggleTheme}
+              className="btn btn-secondary"
+              style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+              title="Toggle Theme"
+            >
+              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            </button>
+            <button 
+              onClick={logout}
+              className="btn btn-secondary"
+              style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem', margin: 0 }}
+            >
+              Log Out
+            </button>
+          </div>
         </div>
 
         {/* Dynamic Page Content */}
@@ -213,6 +228,20 @@ function App() {
     }
   };
 
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('theme');
+    return (saved as 'dark' | 'light') || 'dark';
+  });
+
+  React.useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
+
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -239,7 +268,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthContext.Provider value={{ email, setEmail, currentRole, logout }}>
+      <AuthContext.Provider value={{ email, setEmail, currentRole, logout, theme, toggleTheme }}>
         <Router>
           <AppLayout>
             <Routes>

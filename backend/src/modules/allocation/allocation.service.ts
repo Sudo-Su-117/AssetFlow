@@ -109,6 +109,24 @@ export class AllocationService {
       data: { status: 'ALLOCATED' }
     });
 
+    // 5. Create Notification
+    await prisma.notification.create({
+      data: {
+        userId: data.userId,
+        message: `Asset ${allocation.asset.name} (${allocation.asset.assetTag}) has been allocated to you. Expected return: ${expectedReturnDate ? expectedReturnDate.toLocaleDateString() : 'N/A'}.`,
+        type: 'GENERAL'
+      }
+    });
+
+    // 6. Create Activity Log
+    await prisma.activityLog.create({
+      data: {
+        type: 'ASSET_ALLOCATED',
+        message: `Asset ${allocation.asset.name} (${allocation.asset.assetTag}) allocated to ${allocation.user.name}.`,
+        userId: user.id
+      }
+    });
+
     return allocation;
   }
 
@@ -120,7 +138,10 @@ export class AllocationService {
       notes?: string | null;
     }
   ) {
-    const allocation = await prisma.allocation.findUnique({ where: { id: allocationId } });
+    const allocation = await prisma.allocation.findUnique({
+      where: { id: allocationId },
+      include: { asset: true, user: true }
+    });
     if (!allocation) {
       throw new Error('Allocation record not found.');
     }
@@ -146,6 +167,24 @@ export class AllocationService {
       data: { 
         status: 'AVAILABLE',
         condition: data.conditionAtReturn
+      }
+    });
+
+    // 3. Create Notification
+    await prisma.notification.create({
+      data: {
+        userId: allocation.userId,
+        message: `Asset ${allocation.asset.name} (${allocation.asset.assetTag}) has been returned.`,
+        type: 'GENERAL'
+      }
+    });
+
+    // 4. Create Activity Log
+    await prisma.activityLog.create({
+      data: {
+        type: 'ASSET_ALLOCATED',
+        message: `Asset ${allocation.asset.name} (${allocation.asset.assetTag}) returned by ${allocation.user.name}.`,
+        userId: user.id
       }
     });
 
