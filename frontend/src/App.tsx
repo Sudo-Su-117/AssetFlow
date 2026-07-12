@@ -24,6 +24,7 @@ import { Maintenance } from './pages/Maintenance/Maintenance';
 import { Audit } from './pages/Audit/Audit';
 import { Reports } from './pages/Reports/Reports';
 import { Notifications } from './pages/Notifications/Notifications';
+import { Auth } from './pages/Auth/Auth';
 
 const queryClient = new QueryClient();
 
@@ -37,11 +38,11 @@ export const ROLES = [
   { label: 'Employee (Priya Sharma - HR)', email: 'priya@assetflow.com', role: 'EMPLOYEE' }
 ];
 
-// Simulated Authentication Context
 interface AuthContextType {
   email: string;
   setEmail: (email: string) => void;
-  currentRole: typeof ROLES[0];
+  currentRole: { label?: string; name?: string; email: string; role: string; id?: string };
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -155,21 +156,31 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {/* 2. Content Column */}
       <div className="content-wrapper">
         {/* Global Top Navbar */}
-        <div className="top-navbar">
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Simulate Authenticated Session:</span>
-          <select 
-            className="role-select" 
-            value={email} 
-            onChange={handleRoleChange}
-            title="Switch user simulation role"
-            style={{ width: '280px' }}
+        <div className="top-navbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Simulate Authenticated Session:</span>
+            <select 
+              className="role-select" 
+              value={email} 
+              onChange={handleRoleChange}
+              title="Switch user simulation role"
+              style={{ width: '280px', margin: 0 }}
+            >
+              {ROLES.map((r) => (
+                <option key={r.email} value={r.email}>
+                  {r.label} ({r.role})
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <button 
+            onClick={logout}
+            className="btn btn-secondary"
+            style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem', margin: 0 }}
           >
-            {ROLES.map((r) => (
-              <option key={r.email} value={r.email}>
-                {r.label} ({r.role})
-              </option>
-            ))}
-          </select>
+            Log Out
+          </button>
         </div>
 
         {/* Dynamic Page Content */}
@@ -180,13 +191,55 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 function App() {
-  const [email, setEmail] = useState<string>(ROLES[0].email);
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [user, setUser] = useState<any>(() => {
+    const saved = localStorage.getItem('user');
+    return saved ? JSON.parse(saved) : null;
+  });
 
-  const currentRole = ROLES.find(r => r.email === email) || ROLES[0];
+  const email = token || '';
+
+  const setEmail = (newEmail: string) => {
+    const selected = ROLES.find(r => r.email === newEmail);
+    if (selected) {
+      setToken(selected.email);
+      const simulatedUser = { id: selected.email, email: selected.email, name: selected.label, role: selected.role, departmentId: null };
+      setUser(simulatedUser);
+      localStorage.setItem('token', selected.email);
+      localStorage.setItem('user', JSON.stringify(simulatedUser));
+    } else {
+      setToken(newEmail);
+      localStorage.setItem('token', newEmail);
+    }
+  };
+
+  const logout = () => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  };
+
+  const handleAuthSuccess = (accessToken: string, profile: any) => {
+    setToken(accessToken);
+    setUser(profile);
+    localStorage.setItem('token', accessToken);
+    localStorage.setItem('user', JSON.stringify(profile));
+  };
+
+  const currentRole = user || { email: '', role: 'EMPLOYEE' };
+
+  if (!token) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <Auth onAuthSuccess={handleAuthSuccess} />
+      </QueryClientProvider>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthContext.Provider value={{ email, setEmail, currentRole }}>
+      <AuthContext.Provider value={{ email, setEmail, currentRole, logout }}>
         <Router>
           <AppLayout>
             <Routes>

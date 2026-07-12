@@ -1,8 +1,10 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
+  const passwordHash = await bcrypt.hash('password123', 10);
   console.log('Clearing database...');
   await prisma.activityLog.deleteMany();
   await prisma.notification.deleteMany();
@@ -10,6 +12,9 @@ async function main() {
   await prisma.booking.deleteMany();
   await prisma.transfer.deleteMany();
   await prisma.allocation.deleteMany();
+  await prisma.discrepancyReport.deleteMany();
+  await prisma.auditRecord.deleteMany();
+  await prisma.auditCycle.deleteMany();
   await prisma.asset.deleteMany();
   await prisma.assetCategory.deleteMany();
   await prisma.user.deleteMany();
@@ -67,6 +72,7 @@ async function main() {
       name: 'Sarah Connor',
       email: 'admin@assetflow.com',
       role: 'ADMIN',
+      password: passwordHash,
       status: 'ACTIVE'
     },
   });
@@ -77,6 +83,7 @@ async function main() {
       name: 'John Doe',
       email: 'manager@assetflow.com',
       role: 'ASSET_MANAGER',
+      password: passwordHash,
       status: 'ACTIVE'
     },
   });
@@ -87,6 +94,7 @@ async function main() {
       name: 'James Smith',
       email: 'ithead@assetflow.com',
       role: 'DEPARTMENT_HEAD',
+      password: passwordHash,
       departmentId: itDept.id,
       status: 'ACTIVE'
     },
@@ -97,6 +105,7 @@ async function main() {
       name: 'Emily Davis',
       email: 'hrhead@assetflow.com',
       role: 'DEPARTMENT_HEAD',
+      password: passwordHash,
       departmentId: hrDept.id,
       status: 'ACTIVE'
     },
@@ -119,6 +128,7 @@ async function main() {
       name: 'Alex Johnson',
       email: 'employee@assetflow.com',
       role: 'EMPLOYEE',
+      password: passwordHash,
       departmentId: itDept.id,
       status: 'ACTIVE'
     },
@@ -129,6 +139,7 @@ async function main() {
       name: 'Priya Sharma',
       email: 'priya@assetflow.com',
       role: 'EMPLOYEE',
+      password: passwordHash,
       departmentId: hrDept.id,
       status: 'ACTIVE'
     },
@@ -140,6 +151,7 @@ async function main() {
       name: 'Former Colleague',
       email: 'inactive@assetflow.com',
       role: 'EMPLOYEE',
+      password: passwordHash,
       departmentId: itDept.id,
       status: 'INACTIVE'
     }

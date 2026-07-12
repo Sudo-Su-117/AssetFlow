@@ -12,6 +12,7 @@ model User {
   email        String        @unique
   name         String
   role         String        // "ADMIN", "ASSET_MANAGER", "DEPARTMENT_HEAD", "EMPLOYEE"
+  password     String        @default("")
   status       String        @default("ACTIVE") // "ACTIVE", "INACTIVE"
   departmentId String?
   department   Department?   @relation("DeptUsers", fields: [departmentId], references: [id])

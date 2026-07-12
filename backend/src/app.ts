@@ -12,6 +12,7 @@ import maintenanceRouter from './modules/maintenance/maintenance.routes';
 import auditRouter from './modules/audit/audit.routes';
 import reportsRouter from './modules/reports/reports.routes';
 import notificationRouter from './modules/notifications/notifications.routes';
+import authRouter from './modules/auth/auth.routes';
 
 dotenv.config();
 
@@ -39,6 +40,7 @@ app.use('/api', maintenanceRouter);
 app.use('/api', auditRouter);
 app.use('/api', reportsRouter);
 app.use('/api', notificationRouter);
+app.use('/api', authRouter);
 
 // Fallback for unmatched routes
 app.use((req, res) => {
