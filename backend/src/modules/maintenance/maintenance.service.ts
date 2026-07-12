@@ -18,7 +18,10 @@ export class MaintenanceService {
     if (role === 'DEPARTMENT_HEAD' && departmentId) {
       return prisma.maintenance.findMany({
         where: {
-          asset: { departmentId }
+          OR: [
+            { asset: { departmentId } },
+            { requestedById: userId }
+          ]
         },
         include: {
           asset: true,
@@ -87,14 +90,22 @@ export class MaintenanceService {
   }
 
   static async approveRequest(user: UserContext, id: string) {
-    if (user.role !== 'ADMIN' && user.role !== 'ASSET_MANAGER') {
-      throw new Error('Forbidden: Admin or Asset Manager privileges required.');
-    }
-
-    const request = await prisma.maintenance.findUnique({ where: { id } });
+    const request = await prisma.maintenance.findUnique({
+      where: { id },
+      include: { asset: true }
+    });
     if (!request) {
       throw new Error('Maintenance request not found.');
     }
+
+    if (user.role !== 'ADMIN' && user.role !== 'ASSET_MANAGER') {
+      if (user.role === 'DEPARTMENT_HEAD' && request.asset.departmentId === user.departmentId) {
+        // Allowed
+      } else {
+        throw new Error('Forbidden: Only Admin, Asset Manager, or the Department Head of this asset can approve.');
+      }
+    }
+
     if (request.status !== 'PENDING') {
       throw new Error('Only PENDING requests can be approved.');
     }
@@ -150,15 +161,22 @@ export class MaintenanceService {
       cost?: number;
     }
   ) {
-    if (user.role !== 'ADMIN' && user.role !== 'ASSET_MANAGER') {
-      throw new Error('Forbidden: Admin or Asset Manager privileges required.');
-    }
-
-    const request = await prisma.maintenance.findUnique({ where: { id } });
+    const request = await prisma.maintenance.findUnique({
+      where: { id },
+      include: { asset: true }
+    });
     if (!request) {
       throw new Error('Maintenance request not found.');
     }
     
+    if (user.role !== 'ADMIN' && user.role !== 'ASSET_MANAGER') {
+      if (user.role === 'DEPARTMENT_HEAD' && request.asset.departmentId === user.departmentId) {
+        // Allowed
+      } else {
+        throw new Error('Forbidden: Only Admin, Asset Manager, or the Department Head of this asset can assign technicians.');
+      }
+    }
+
     if (request.status !== 'APPROVED') {
       throw new Error('Requests must be APPROVED before technician assignment.');
     }

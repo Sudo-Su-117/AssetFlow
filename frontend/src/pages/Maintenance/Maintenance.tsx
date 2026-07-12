@@ -17,8 +17,8 @@ export const Maintenance: React.FC = () => {
   const { currentRole, email } = useAuth();
   const queryClient = useQueryClient();
 
-  const isManager = currentRole.role === 'ADMIN' || currentRole.role === 'ASSET_MANAGER';
-  const isTech = currentRole.role === 'ADMIN' || currentRole.role === 'ASSET_MANAGER' || currentRole.role === 'TECHNICIAN';
+  const isManager = currentRole.role === 'ADMIN' || currentRole.role === 'ASSET_MANAGER' || currentRole.role === 'DEPARTMENT_HEAD';
+  const isTech = currentRole.role === 'ADMIN' || currentRole.role === 'ASSET_MANAGER' || currentRole.role === 'TECHNICIAN' || currentRole.role === 'DEPARTMENT_HEAD';
 
   // Modal open states
   const [reportOpen, setReportOpen] = useState(false);
@@ -65,6 +65,9 @@ export const Maintenance: React.FC = () => {
       setReportOpen(false);
       setAssetId('');
       setDescription('');
+    },
+    onError: (err: any) => {
+      alert(err.message || 'Failed to raise maintenance request');
     }
   });
 
@@ -75,6 +78,9 @@ export const Maintenance: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['reportsOverview'] });
+    },
+    onError: (err: any) => {
+      alert(err.message || 'Failed to approve maintenance request');
     }
   });
 
@@ -84,6 +90,9 @@ export const Maintenance: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['maintenance'] });
       setAssignOpen(false);
       setSelectedReqId(null);
+    },
+    onError: (err: any) => {
+      alert(err.message || 'Failed to assign technician');
     }
   });
 
@@ -91,6 +100,9 @@ export const Maintenance: React.FC = () => {
     mutationFn: (id: string) => startMaintenanceWork(email, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenance'] });
+    },
+    onError: (err: any) => {
+      alert(err.message || 'Failed to start maintenance work');
     }
   });
 
@@ -104,6 +116,9 @@ export const Maintenance: React.FC = () => {
       setResolveOpen(false);
       setSelectedReqId(null);
       setResolutionNotes('');
+    },
+    onError: (err: any) => {
+      alert(err.message || 'Failed to resolve maintenance request');
     }
   });
 

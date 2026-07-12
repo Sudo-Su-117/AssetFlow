@@ -84,12 +84,51 @@ export const Reports: React.FC = () => {
 
   return (
     <div className="main-content">
-      {/* Title */}
-      <div style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Reports & Intelligence</h2>
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-          Historical business analytics aggregating asset checkouts, schedules, repair lifecycles, and compliance cycles.
-        </p>
+      {/* Title & Live Status */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Reports & Intelligence</h2>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            Historical business analytics aggregating asset checkouts, schedules, repair lifecycles, and compliance cycles.
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '0.35rem 0.75rem', borderRadius: '50px', fontSize: '0.75rem', color: '#a7f3d0' }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 8px #10b981' }} />
+            Live DB Sync Active
+          </div>
+          <button 
+            onClick={() => refetch()} 
+            className="btn btn-secondary" 
+            style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', margin: 0 }}
+          >
+            <Activity size={12} /> Sync Now
+          </button>
+        </div>
+      </div>
+
+      {/* Dynamic ERP Operational Insights Banner */}
+      <div className="glass-card" style={{ 
+        background: 'linear-gradient(90deg, rgba(59,130,246,0.06) 0%, rgba(139,92,246,0.06) 100%)', 
+        borderColor: 'rgba(59, 130, 246, 0.2)',
+        borderRadius: '12px',
+        padding: '1rem 1.25rem',
+        marginBottom: '2rem',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem'
+      }}>
+        <div style={{ fontSize: '1.25rem' }}>💡</div>
+        <div style={{ fontSize: '0.85rem', lineHeight: 1.5 }}>
+          <strong>ERP Operational Insight:</strong>{' '}
+          {analytics.idleAssets.length > 0 ? (
+            <span>You have {analytics.idleAssets.length} idle asset(s) inactive for over 30 days. Consider re-allocating <strong>{analytics.idleAssets[0].name} ({analytics.idleAssets[0].assetTag})</strong> to reduce new procurement costs.</span>
+          ) : analytics.assetsDueOrRetiring.length > 0 ? (
+            <span>Preventive care alert: <strong>{analytics.assetsDueOrRetiring[0].name}</strong> requires maintenance attention soon. Resolve open tickets to maximize lifetime value.</span>
+          ) : (
+            <span>Your hardware fleet is running at 100% health parameters. All allocations are active and no discrepancies are pending.</span>
+          )}
+        </div>
       </div>
 
       {/* Double Charts Grid (Matches Wireframe) */}
@@ -129,11 +168,21 @@ export const Reports: React.FC = () => {
                     height: `${pct * 1.5}px`, // Scaled for 150px max
                     background: 'linear-gradient(180deg, var(--color-primary) 0%, rgba(59, 130, 246, 0.4) 100%)',
                     borderRadius: '4px 4px 0 0',
-                    transition: 'height 0.5s ease-out',
-                    position: 'relative'
+                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(59, 130, 246, 0.2)'
                   }}
                   className="bar-hover"
                   title={`${dept}: ${pct}%`}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 0 15px var(--color-primary)';
+                    e.currentTarget.style.transform = 'scaleY(1.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(59, 130, 246, 0.2)';
+                    e.currentTarget.style.transform = 'scaleY(1)';
+                  }}
                 >
                   {/* Percentage label floating */}
                   <span style={{ 
@@ -197,6 +246,15 @@ export const Reports: React.FC = () => {
                     fill="var(--bg-card)"
                     stroke="var(--color-primary)"
                     strokeWidth="2"
+                    style={{ transition: 'all 0.3s', cursor: 'pointer' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.setAttribute('r', '7');
+                      e.currentTarget.setAttribute('stroke-width', '3');
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.setAttribute('r', '4');
+                      e.currentTarget.setAttribute('stroke-width', '2');
+                    }}
                     title={`${p.month}: ${p.count}`}
                   />
                   {/* Label Month */}
