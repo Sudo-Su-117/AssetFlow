@@ -98,11 +98,11 @@ export class MaintenanceService {
       throw new Error('Maintenance request not found.');
     }
 
-    if (user.role !== 'ADMIN' && user.role !== 'ASSET_MANAGER') {
-      if (user.role === 'DEPARTMENT_HEAD' && request.asset.departmentId === user.departmentId) {
+    if (user.role !== 'ADMIN' && user.role !== 'ASSET_MANAGER' && user.role !== 'DEPARTMENT_HEAD') {
+      if (request.requestedById === user.id) {
         // Allowed
       } else {
-        throw new Error('Forbidden: Only Admin, Asset Manager, or the Department Head of this asset can approve.');
+        throw new Error('Forbidden: Only Admin, Asset Manager, Department Head, or the ticket Creator can approve.');
       }
     }
 
@@ -169,11 +169,11 @@ export class MaintenanceService {
       throw new Error('Maintenance request not found.');
     }
     
-    if (user.role !== 'ADMIN' && user.role !== 'ASSET_MANAGER') {
-      if (user.role === 'DEPARTMENT_HEAD' && request.asset.departmentId === user.departmentId) {
+    if (user.role !== 'ADMIN' && user.role !== 'ASSET_MANAGER' && user.role !== 'DEPARTMENT_HEAD') {
+      if (request.requestedById === user.id) {
         // Allowed
       } else {
-        throw new Error('Forbidden: Only Admin, Asset Manager, or the Department Head of this asset can assign technicians.');
+        throw new Error('Forbidden: Only Admin, Asset Manager, Department Head, or the ticket Creator can assign technicians.');
       }
     }
 
